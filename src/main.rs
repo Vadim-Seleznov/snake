@@ -15,25 +15,30 @@ fn run(contents: &str) -> Result<(), String> {
     return Err("Not implemented yet!".to_string());
 }
 
-fn run_prompt() -> Result<(), String>{
-    print!("> ");
-    match io::stdout().flush() {
-        Ok(_) => (),
-        Err(_) => return Err("Could not flush stdout!".to_string())
-    }
-
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-
-    match handle.read_line(&mut buffer) {
+fn run_prompt() -> Result<(), String> {
+    loop {
+        print!("> ");
+        match io::stdout().flush() {
             Ok(_) => (),
-            Err(_) => return Err("Could not parse line!".to_string()),
-    };
+            Err(_) => return Err("Could not flush stdout!".to_string())
+        }
+    
+        let mut buffer = String::new();
+        let stdin = io::stdin();
+        let mut handle = stdin.lock();
+    
+        match handle.read_line(&mut buffer) {
+                Ok(_) => (),
+                Err(_) => return Err("Could not parse line!".to_string()),
+        };
 
-
-    println!("You wrote: {buffer}");
-    Ok(())
+        if buffer == "exit\n" || buffer == "exit" {
+            return Ok(());
+        }
+    
+    
+        println!("You wrote: {buffer}");
+    }
 }
 
 fn main() {
@@ -54,10 +59,10 @@ fn main() {
         }
 
     } else {
-        if let Ok(val) = run_prompt() {
+        if let Ok(_) = run_prompt() {
             exit(0);
         } else {
-            println!("Error!");
+            println!("Error while running prompt!");
             exit(1);
         }
     }
