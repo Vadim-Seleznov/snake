@@ -1,7 +1,7 @@
 use std::env;
 use std::process::exit;
 use std::fs;
-use std::io;
+use std::io::{self, BufRead, Write};
 
 fn run_file(path: &str) -> Result<(), String> {
     if let Ok(contents) = fs::read_to_string(path) {
@@ -17,13 +17,19 @@ fn run(contents: &str) -> Result<(), String> {
 
 fn run_prompt() -> Result<(), String>{
     print!("> ");
+    match io::stdout().flush() {
+        Ok(_) => (),
+        Err(_) => return Err("Could not flush stdout!".to_string())
+    }
+
     let mut buffer = String::new();
     let stdin = io::stdin();
+    let mut handle = stdin.lock();
 
-    match stdin.read_line(&mut buffer) {
+    match handle.read_line(&mut buffer) {
             Ok(_) => (),
-            Err(msg) => return Err("Could not parse line!".to_string()),
-        };
+            Err(_) => return Err("Could not parse line!".to_string()),
+    };
 
 
     println!("You wrote: {buffer}");
