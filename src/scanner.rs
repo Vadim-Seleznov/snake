@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 pub struct Scanner {
     source: String,
     tokens: Vec<Token>,
@@ -15,9 +13,13 @@ impl Scanner {
     }
 
     pub fn scan_tokens(&mut self) -> Result<Vec<Token>, String> {
+        let mut errors: Vec<String>  = vec![];
         while!self.is_at_end() {
             self.start = self.current;
-            self.scan_token()?;
+            match self.scan_token() {
+                Ok(_) => (),
+                Err(msg) => errors.push(msg),
+            };
         }
 
         self.tokens.push(Token { 
@@ -25,11 +27,20 @@ impl Scanner {
             lexeme: "".to_string(), 
             literal: None, 
             line_number: self.line });
+
+        if errors.len() > 0 {
+            let mut joined = String::new();
+            for msg in errors {
+                joined.push_str(&msg);
+                joined.push_str("\n");
+            }
+            return Err(joined);
+        }
         
         Ok(self.tokens.clone())
     }
 
-    fn scan_token(&mut self) -> Result<Token, String> {
+    fn scan_token(&mut self) -> Result<(), String> {
         let c = self.advance();
 
         match c {
@@ -44,7 +55,7 @@ impl Scanner {
             '+' => self.add_token(TokenType::Plus),
             '*' => self.add_token(TokenType::Star),
             '/' => self.add_token(TokenType::Slash),
-            _ => return Err(format!("Unrecognized char: {c}")),
+            _ => return Err(format!("Unrecognized char: {c}, at line: {}", self.line)),
         }
 
         todo!()
