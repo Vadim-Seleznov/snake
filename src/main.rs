@@ -1,3 +1,6 @@
+mod scanner;
+use crate::scanner::*;
+
 use std::env;
 use std::process::exit;
 use std::fs;
@@ -12,7 +15,14 @@ fn run_file(path: &str) -> Result<(), String> {
 }
 
 fn run(contents: &str) -> Result<(), String> {
-    return Err("Not implemented yet!".to_string());
+    let scanner = Scanner::new(contents);
+    let tokens = scanner.scan_tokens()?;
+
+    for token in tokens {
+        println!("{token:?}");
+    }
+
+    Ok(())
 }
 
 fn run_prompt() -> Result<(), String> {
@@ -37,7 +47,12 @@ fn run_prompt() -> Result<(), String> {
         }
     
     
-        println!("You wrote: {buffer}");
+        println!("ECHO: {buffer}");
+        if let Err(msg) = run(&buffer) {
+            return Err(msg);
+        } else {
+            continue;
+        }
     }
 }
 
