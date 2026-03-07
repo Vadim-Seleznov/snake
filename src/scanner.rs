@@ -147,7 +147,7 @@ impl Scanner {
             return false;
         }
 
-        if self.source.as_bytes()[self.current] as char != expected {
+        if self.source.chars().nth(self.current).unwrap() != expected {
             return false;
         } else {
             self.current += 1;
@@ -164,10 +164,8 @@ impl Scanner {
 
     fn add_token_lit(&mut self, token_type: TokenType, literal: LiteralType) {
         let mut text = String::new();
-        let bytes = self.source.as_bytes();
-        for i in self.start..self.current {
-            text.push(bytes[i] as char);
-        }
+        let _lit= self.source[self.start..self.current].chars()
+                        .map(|ch| text.push(ch));
 
         self.tokens.push(Token {
             token_type,
@@ -304,6 +302,39 @@ mod tests {
         assert_eq!(tokens[0].token_type, TokenType::String);
         match tokens[0].literal.as_ref().unwrap() {
             LiteralType::StringValue(val) => assert_eq!(val, "Hello world!"),
+            _ => panic!("Incorrect literal type!"),
+        };
+    }
+
+    #[test]
+    fn handle_unterminated_string_literal() {
+        let source = r#""Hello world!"#;
+        let mut scanner: Scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(msg) => {
+                assert_eq!(msg, "Unterminated string!\n");
+                vec![]
+            }
+        };
+
+        assert_eq!(tokens.len(), 0);
+    }
+
+
+    #[test]
+    fn handle_string_literal_multiline() {
+        let source = "\"Hello\nworld!\"";
+        let mut scanner: Scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
+
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].token_type, TokenType::String);
+        match tokens[0].literal.as_ref().unwrap() {
+            LiteralType::StringValue(val) => assert_eq!(val, "Hello\nworld!"),
             _ => panic!("Incorrect literal type!"),
         };
     }
