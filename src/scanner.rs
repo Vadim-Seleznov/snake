@@ -8,13 +8,13 @@ pub struct Scanner {
 
 impl Scanner {
     pub fn new(source: &str) -> Self {
-        Self { source: source.to_string(), tokens: vec![], 
+        Self { source: source.to_string(), tokens: vec![],
             start: 0, current: 0, line: 1 }
     }
 
     pub fn scan_tokens(&mut self) -> Result<Vec<Token>, String> {
         let mut errors: Vec<String>  = vec![];
-        while!self.is_at_end() {
+        while !self.is_at_end() {
             self.start = self.current;
             match self.scan_token() {
                 Ok(_) => (),
@@ -34,6 +34,7 @@ impl Scanner {
                 joined.push_str(&msg);
                 joined.push_str("\n");
             }
+
             return Err(joined);
         }
         
@@ -54,11 +55,80 @@ impl Scanner {
             ';' => self.add_token(TokenType::Semicolon),
             '+' => self.add_token(TokenType::Plus),
             '*' => self.add_token(TokenType::Star),
-            '/' => self.add_token(TokenType::Slash),
+            '/' => {
+                if self.chmatch('/') {
+                    loop {
+                        if self.peak() == '\n' || self.is_at_end() {
+                            break;
+                        }
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash);
+                }
+            }, 
+            '!' => {
+                let token = if self.chmatch('=') {
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                };
+
+                self.add_token(token);
+            }
+            '=' => {
+                let token = if self.chmatch('=') {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                };
+                self.add_token(token);
+            }
+            '<' => {
+                let token = if self.chmatch('=') {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                };
+                self.add_token(token);
+            }
+            '>' => {
+                let token = if self.chmatch('=') {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                };
+                self.add_token(token);
+            }
+
+            ' ' | '\r' | '\t' => (),
+            '\n' => self.line += 1,
+
             _ => return Err(format!("Unrecognized char: {c}, at line: {}", self.line)),
         }
 
-        todo!()
+        Ok(())
+    }
+
+    fn peak(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
+        self.source.as_bytes()[self.current] as char
+    }
+
+    fn chmatch(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        if self.source.as_bytes()[self.current] as char != expected {
+            return false;
+        } else {
+            self.current += 1;
+            return true;
+        }
     }
 
     fn advance(&mut self) -> char {
@@ -88,7 +158,7 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // ONE CHAR TOKENS
     LeftParen, RightParen, LeftBrace, RightBrace, 
@@ -97,7 +167,7 @@ pub enum TokenType {
     // ONE-TWO CHAR TOKENS AS ==
     Bang, BangEqual,
     Equal, EqualEqual,
-    Greater, GreateEqual,
+    Greater, GreaterEqual,
     Less, LessEqual,
 
     // LITERALS
@@ -138,5 +208,27 @@ impl Token {
 
     pub fn to_string(&self) -> String {
         format!("{:?} {:?} {:?}", self.token_type, self.lexeme, self.literal)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn handle_one_char_tokens() {
+        let source = "(( ))";
+        let mut scanner = Scanner::new(source);
+        let tokens: Vec<Token> = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
+
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(tokens[1].token_type, TokenType::LeftParen);
+        assert_eq!(tokens[2].token_type, TokenType::RightParen);
+        assert_eq!(tokens[3].token_type, TokenType::RightParen);
+        assert_eq!(tokens[4].token_type, TokenType::EOF);
     }
 }
