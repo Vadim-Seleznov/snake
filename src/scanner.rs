@@ -231,4 +231,21 @@ mod tests {
         assert_eq!(tokens[3].token_type, TokenType::RightParen);
         assert_eq!(tokens[4].token_type, TokenType::EOF);
     }
+
+    #[test]
+    fn handle_two_char_tokens() {
+        let source = "! != == <=";
+        let mut scanner: Scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
+
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0].token_type, TokenType::Bang);
+        assert_eq!(tokens[1].token_type, TokenType::BangEqual);
+        assert_eq!(tokens[2].token_type, TokenType::EqualEqual);
+        assert_eq!(tokens[3].token_type, TokenType::LessEqual);
+        assert_eq!(tokens[4].token_type, TokenType::EOF);
+    }
 }
