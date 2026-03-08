@@ -1,7 +1,17 @@
-use std::result;
+use std::collections::HashMap;
 
 pub fn is_digit(c: char) -> bool {
     (c as u8) >= b'0' && (c as u8) <= b'9'
+}
+
+pub fn is_alfa(c: char) -> bool {
+    ((c as u8) >= b'a' && (c as u8) <= b'z') || 
+        ((c as u8) >= b'A' && (c as u8) <= b'Z') || 
+            c == '_'
+}
+
+pub fn is_alfanumeric(c: char) -> bool {
+    is_digit(c) || is_alfa(c)
 }
 
 pub struct Scanner {
@@ -10,13 +20,37 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+    keywords: HashMap<&'static str, TokenType>,
+}
+
+
+fn collect_keywords() -> HashMap<&'static str, TokenType> {
+    HashMap::from([
+        ("and", TokenType::And),
+        ("class", TokenType::Class),
+        ("else", TokenType::Else),
+        ("false", TokenType::False),
+        ("for", TokenType::For),
+        ("fun", TokenType::Fun),
+        ("if", TokenType::If),
+        ("nil", TokenType::Nil),
+        ("or", TokenType::Or),
+        ("print", TokenType::Print),
+        ("return", TokenType::Return),
+        ("super", TokenType::Super),
+        ("this", TokenType::This),
+        ("true", TokenType::True),
+        ("var", TokenType::Var),
+        ("while", TokenType::While),
+    ])
 }
 
 impl Scanner {
     pub fn new(source: &str) -> Self {
         Self { source: source.to_string(), tokens: vec![],
-            start: 0, current: 0, line: 1 }
+            start: 0, current: 0, line: 1, keywords: collect_keywords() }
     }
+
 
     pub fn scan_tokens(&mut self) -> Result<Vec<Token>, String> {
         let mut errors: Vec<String> = vec![];
@@ -121,6 +155,8 @@ impl Scanner {
                     if let Err(msg) = self.number() {
                         return Err(msg);
                     }
+                } else if is_alfa(c) {
+                    self.identifier()
                 } else {
                     return Err(format!("Unrecognized char: {c}, at line: {}", self.line));
                 }
@@ -131,6 +167,19 @@ impl Scanner {
     }
 
 
+    fn identifier(&mut self)  {
+        while is_alfanumeric(self.peek()) {
+            self.advance();
+        }
+
+        let text = &self.source[self.start..self.current];
+
+        if let Some(t) = self.keywords.get(text) {
+            self.add_token(*t);
+        } else {
+            self.add_token(TokenType::Identifier);
+        }
+    }
 
     fn number(&mut self) -> Result<(), String> {
         while is_digit(self.peek()) {
@@ -246,7 +295,7 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     // ONE CHAR TOKENS
     LeftParen, RightParen, LeftBrace, RightBrace, 
@@ -417,7 +466,61 @@ mod tests {
             Some(LiteralType::FloatValue(val)) => assert_eq!(val, 5.0),
             _ => panic!("Incorrect literal when expected 123.431"),
         };
+    }
 
+    #[test]
+    fn handle_identifiers() {
+        let source = "test_var = 432;";
+        let mut scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
 
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(tokens[0].lexeme, "test_var");
+    }
+
+    #[test]
+    fn handle_keywords() {
+        let source = "if or while false true";
+        let mut scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
+
+        assert_eq!(tokens.len(), 6);
+
+        assert_eq!(tokens[0].token_type, TokenType::If);
+        assert_eq!(tokens[1].token_type, TokenType::Or);
+        assert_eq!(tokens[2].token_type, TokenType::While);
+        assert_eq!(tokens[3].token_type, TokenType::False);
+        assert_eq!(tokens[4].token_type, TokenType::True);
+    }
+
+    #[test]
+    fn handle_keywords2() {
+        let source = "var some_var = 52;\nwhile true { print 2 }";
+        let mut scanner = Scanner::new(source);
+        let tokens = match scanner.scan_tokens() {
+            Ok(tokens) => tokens,
+            Err(_) => vec![],
+        };
+
+        assert_eq!(tokens.len(), 12);
+        
+        assert_eq!(tokens[0].token_type, TokenType::Var);
+        assert_eq!(tokens[1].token_type, TokenType::Identifier);
+        assert_eq!(tokens[2].token_type, TokenType::Equal);
+        assert_eq!(tokens[3].token_type, TokenType::Number);
+        assert_eq!(tokens[4].token_type, TokenType::Semicolon);
+        assert_eq!(tokens[5].token_type, TokenType::While);
+        assert_eq!(tokens[6].token_type, TokenType::True);
+        assert_eq!(tokens[7].token_type, TokenType::LeftBrace);
+        assert_eq!(tokens[8].token_type, TokenType::Print);
+        assert_eq!(tokens[9].token_type, TokenType::Number);
+        assert_eq!(tokens[10].token_type, TokenType::RightBrace);
+        assert_eq!(tokens[11].token_type, TokenType::EOF);
     }
 }
