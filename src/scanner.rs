@@ -23,7 +23,6 @@ pub struct Scanner {
     keywords: HashMap<&'static str, TokenType>,
 }
 
-
 fn collect_keywords() -> HashMap<&'static str, TokenType> {
     HashMap::from([
         ("and", TokenType::And),
@@ -327,10 +326,10 @@ pub enum LiteralType {
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
-    literal: Option<LiteralType>,
-    line_number: usize,
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub literal: Option<LiteralType>,
+    pub line_number: usize,
 }
 
 impl Token {
