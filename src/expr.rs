@@ -51,6 +51,7 @@ mod tests {
 
     #[test]
     fn handle_expr_to_string() {
+        // kinda bloated but I dont really give a shit
         let minus_token = Token::new(TokenType::Minus, "-".to_string(), None, 1);
         let num = Box::from(Expr::Literal { value: LiteralValue::Number(123.0) });
         let times = Token::new(TokenType::Star, "*".to_string(), None, 1);
