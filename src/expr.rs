@@ -35,7 +35,6 @@ impl Expr {
             Expr::Grouping { expression } => format!("(group {})", expression.to_string()),
             Expr::Literal { value } => format!("{}", value.to_string()),
             Expr::Unary { operator, right } => format!("({} {})", operator.lexeme, right.to_string()),
-            _ => todo!(),
         }
     }
 
